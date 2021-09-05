@@ -13,10 +13,6 @@ import { RoleChecker } from '../../RoleChecker';
 import { AuthorizationRequiredError } from '../../error/AuthorizationRequiredError';
 import { HttpError, NotFoundError } from '../../index';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const cookie = require('cookie');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const templateUrl = require('template-url');
 
 /**
  * Integration with koa framework.
@@ -212,12 +208,12 @@ export class KoaDriver extends BaseDriver {
 
       case 'cookie':
         if (!context.headers.cookie) return;
-        const cookies = cookie.parse(context.headers.cookie);
+        const cookies = this.loadCookie().parse(context.headers.cookie);
         return cookies[param.name];
 
       case 'cookies':
         if (!request.headers.cookie) return {};
-        return cookie.parse(request.headers.cookie);
+        return this.loadCookie().parse(request.headers.cookie);
     }
   }
 
@@ -238,6 +234,7 @@ export class KoaDriver extends BaseDriver {
       if (typeof result === 'string') {
         options.response.redirect(result);
       } else if (result instanceof Object) {
+        const templateUrl = this.loadTemplateUrl();
         options.response.redirect(templateUrl(action.redirect, result));
       } else {
         options.response.redirect(action.redirect);

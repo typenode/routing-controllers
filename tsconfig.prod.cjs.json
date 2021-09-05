@@ -2,6 +2,8 @@
   "extends": "./tsconfig.prod.json",
   "compilerOptions": {
     "module": "CommonJS",
+    "target": "esnext",
+    "lib": ["esnext"],
     "outDir": "build/cjs"
   },
 }

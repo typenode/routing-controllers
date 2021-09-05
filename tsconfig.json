@@ -6,7 +6,7 @@
     "lib": ["es2018"],
     "outDir": "build/node",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "sourceMap": true,
     "inlineSources": true,
     "removeComments": false,

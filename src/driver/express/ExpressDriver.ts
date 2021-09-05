@@ -13,11 +13,6 @@ import { getFromContainer } from '../../container';
 import { AuthorizationRequiredError } from '../../error/AuthorizationRequiredError';
 import { NotFoundError } from '../../index';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const cookie = require('cookie');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const templateUrl = require('template-url');
-
 /**
  * Integration with express framework.
  */
@@ -239,12 +234,12 @@ export class ExpressDriver extends BaseDriver {
 
       case 'cookie':
         if (!request.headers.cookie) return;
-        const cookies = cookie.parse(request.headers.cookie);
+        const cookies = this.loadCookie().parse(request.headers.cookie);
         return cookies[param.name];
 
       case 'cookies':
         if (!request.headers.cookie) return {};
-        return cookie.parse(request.headers.cookie);
+        return this.loadCookie().parse(request.headers.cookie);
     }
   }
 
@@ -290,6 +285,7 @@ export class ExpressDriver extends BaseDriver {
       if (typeof result === 'string') {
         options.response.redirect(result);
       } else if (result instanceof Object) {
+        const templateUrl = this.loadTemplateUrl();
         options.response.redirect(templateUrl(action.redirect, result));
       } else {
         options.response.redirect(action.redirect);

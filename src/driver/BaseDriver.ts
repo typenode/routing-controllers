@@ -172,6 +172,22 @@ export abstract class BaseDriver {
     return result;
   }
 
+  protected loadCookie(){
+    try {
+      return require('cookie');
+    } catch (e) {
+      throw new Error('cookie package was not found installed. Try to install it: npm install cookie --save');
+    }
+  }
+
+  protected loadTemplateUrl(){
+    try {
+      return require('template-url');
+    } catch (e) {
+      throw new Error('template-url package was not found installed. Try to install it: npm install template-url --save');
+    }
+  }
+
   /**
    * Initializes the things driver needs before routes and middleware registration.
    */
