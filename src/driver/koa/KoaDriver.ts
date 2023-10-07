@@ -42,7 +42,7 @@ export class KoaDriver extends BaseDriver {
     this.koa.use(bodyParser());
     if (this.cors) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const cors = require('kcors');
+      const cors = require('@koa/cors');
       if (this.cors === true) {
         this.koa.use(cors());
       } else {
@@ -117,9 +117,6 @@ export class KoaDriver extends BaseDriver {
         .forEach(param => {
           defaultMiddlewares.push(multer(param.extraOptions).array(param.name));
         });
-
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      defaultMiddlewares.push(this.fixMulterRequestAssignment);
     }
 
     // user used middlewares
@@ -128,7 +125,13 @@ export class KoaDriver extends BaseDriver {
     const afterMiddlewares = this.prepareMiddlewares(uses.filter(use => use.afterAction));
 
     // prepare route and route handler function
-    const route = ActionMetadata.appendBaseRoute(this.routePrefix, actionMetadata.fullRoute);
+    let route = ActionMetadata.appendBaseRoute(this.routePrefix, actionMetadata.fullRoute);
+
+    // @koa/router is strict about trailing slashes, allow accessing routes without them
+    if (typeof route === 'string' && route.length > 1 && route.endsWith('/')) {
+      route = route.substring(0, route.length - 1);
+    }
+
     const routeHandler = (context: any, next: () => Promise<any>) => {
       const options: Action = { request: context.request, response: context.response, context, next };
       return executeCallback(options);
@@ -195,10 +198,10 @@ export class KoaDriver extends BaseDriver {
         return context.query;
 
       case 'file':
-        return actionOptions.context.req.file;
+        return actionOptions.context.request.file;
 
       case 'files':
-        return actionOptions.context.req.files;
+        return actionOptions.context.request.files;
 
       case 'header':
         return context.headers[param.name.toLowerCase()];
@@ -289,7 +292,7 @@ export class KoaDriver extends BaseDriver {
    * Handles result of failed executed controller action.
    */
   handleError(error: any, action: ActionMetadata | undefined, options: Action) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       if (this.isDefaultErrorHandlingEnabled) {
         // apply http headers
         if (action) {
@@ -350,7 +353,7 @@ export class KoaDriver extends BaseDriver {
   }
 
   /**
-   * Dynamically loads koa and required koa-router module.
+   * Dynamically loads koa module.
    */
   protected loadKoa() {
     if (require) {
@@ -367,16 +370,16 @@ export class KoaDriver extends BaseDriver {
   }
 
   /**
-   * Dynamically loads koa-router module.
+   * Dynamically loads @koa/router module.
    */
   private loadRouter() {
     if (require) {
       if (!this.router) {
         try {
-          this.router = new (require('koa-router'))();
+          this.router = new (require('@koa/router'))();
         } catch (e) {
           throw new Error(
-            'koa-router package was not found installed. Try to install it: npm install koa-router@next --save'
+            '@koa/router package was not found installed. Try to install it: npm install @koa/router --save'
           );
         }
       }
@@ -386,31 +389,13 @@ export class KoaDriver extends BaseDriver {
   }
 
   /**
-   * Dynamically loads koa-multer module.
+   * Dynamically loads @koa/multer module.
    */
   private loadMulter() {
     try {
-      return require('koa-multer');
+      return require('@koa/multer');
     } catch (e) {
-      throw new Error('koa-multer package was not found installed. Try to install it: npm install koa-multer --save');
+      throw new Error('@koa/multer package was not found installed. Try to install it: npm install @koa/multer --save');
     }
-  }
-
-  /**
-   * This middleware fixes a bug on koa-multer implementation.
-   *
-   * This bug should be fixed by koa-multer PR #15: https://github.com/koa-modules/multer/pull/15
-   */
-  private async fixMulterRequestAssignment(ctx: any, next: Function) {
-    if ('request' in ctx) {
-      if (ctx.req.body) ctx.request.body = ctx.req.body;
-      if (ctx.req.file) ctx.request.file = ctx.req.file;
-      if (ctx.req.files) {
-        ctx.request.files = ctx.req.files;
-        ctx.files = ctx.req.files;
-      }
-    }
-
-    return await next();
   }
 }
